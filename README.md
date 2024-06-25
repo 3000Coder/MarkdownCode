@@ -5,7 +5,7 @@ BrainF*ck interpretter using whitespace to encode hidden code in ordinary text.
 MarkCode instruction is set of 3 continous blank characters (space, tabulator) in row not interrupted by a new like character.
 
 ### This is how MarkCode translates to regular BrainF*ck
-(for simplicity in the following table space is represented as 0 and tabulator as 1)
+(for simplicity in the following table spaces are represented as 0 and tabulators as 1)
 
 000 - `>`
 

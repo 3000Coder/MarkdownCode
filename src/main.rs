@@ -6,6 +6,15 @@ const ONE: char = '\t';
 const IGNORE_NEWLINES: bool = false;
 const TAPE_LENGTH: usize = 1024;
 
+const POINTER_RIGHT_COMBINATION: u8 = 0b000;
+const POINTER_LEFT_COMBINATION: u8 = 0b001;
+const INCREASE_COMBINATION: u8 = 0b010;
+const DECREASE_COMBINATION: u8 = 0b011;
+const PRINT_COMBINATION: u8 = 0b100;
+const INPUT_COMBINATION: u8 = 0b101;
+const LOOP_BEGIN_COMBINATION: u8 = 0b110;
+const LOOP_END_COMBINATION: u8 = 0b111;
+
 #[derive(Debug)]
 enum Instruction {
     PointerRight,
@@ -39,7 +48,7 @@ fn file_to_instruction(f: String) -> Vec<Instruction> {
                     buffer.push(c);
 
                     let chars: Vec<char> = buffer.chars().collect();
-                    let mut instruction_buffer = 0;
+                    let mut instruction_buffer: u8 = 0;
                     for i in 0..chars.len() {
                         if chars[i] == ONE {
                             instruction_buffer += 0b100 >> i;
@@ -47,14 +56,14 @@ fn file_to_instruction(f: String) -> Vec<Instruction> {
                     }
 
                     match instruction_buffer {
-                        0b000 => result.push(Instruction::PointerRight),
-                        0b001 => result.push(Instruction::PointerLeft),
-                        0b010 => result.push(Instruction::Increase),
-                        0b011 => result.push(Instruction::Decrease),
-                        0b100 => result.push(Instruction::Print),
-                        0b101 => result.push(Instruction::Input),
-                        0b110 => result.push(Instruction::LoopBegin),
-                        0b111 => result.push(Instruction::LoopEnd),
+                        POINTER_RIGHT_COMBINATION => result.push(Instruction::PointerRight),
+                        POINTER_LEFT_COMBINATION => result.push(Instruction::PointerLeft),
+                        INCREASE_COMBINATION => result.push(Instruction::Increase),
+                        DECREASE_COMBINATION => result.push(Instruction::Decrease),
+                        PRINT_COMBINATION => result.push(Instruction::Print),
+                        INPUT_COMBINATION => result.push(Instruction::Input),
+                        LOOP_BEGIN_COMBINATION => result.push(Instruction::LoopBegin),
+                        LOOP_END_COMBINATION => result.push(Instruction::LoopEnd),
                         _ => panic!("Unexpected input."),
                     }
 
