@@ -1,6 +1,5 @@
-use std::cmp::max;
-use std::cmp::min;
 use std::fs;
+use std::io::Read;
 
 const ZERO: char = ' ';
 const ONE: char = '\t';
@@ -77,8 +76,6 @@ fn run(instructions: Vec<Instruction>) {
     let mut tape: Vec<u8> = vec![0; TAPE_LENGTH];
     let mut data_pointer: usize = 0;
     let mut instruction_pointer: usize = 0;
-    let mut loop_opening_cache: Option<usize> = None;
-    println!("Num of instructions: {}", instructions.len());
     while instructions.len() > instruction_pointer {
         match instructions[instruction_pointer] {
             Instruction::PointerRight => {
@@ -98,44 +95,60 @@ fn run(instructions: Vec<Instruction>) {
                 tape[data_pointer] = tape[data_pointer].wrapping_sub(1);
             }
             Instruction::Print => {
-                println!(
-                    "Printing: {} at pos {}",
-                    tape[data_pointer] as char, data_pointer
-                );
+                print!("{}", tape[data_pointer] as char);
             }
             Instruction::Input => {
-                todo!();
+                let mut input: [u8; 1] = [0; 1];
+                std::io::stdin()
+                    .read_exact(&mut input)
+                    .expect("failed to read stdin");
+                tape[data_pointer] = input[0];
             }
             Instruction::LoopBegin => {
                 if tape[data_pointer] == 0 {
-                    while !matches!(instructions[instruction_pointer], Instruction::LoopEnd) {
-                        if instruction_pointer + 1 < instructions.len() {
+                    let mut nesting: usize = 1;
+                    while nesting != 0 {
+                        if instruction_pointer != instructions.len() - 1 {
                             instruction_pointer += 1;
                         } else {
                             panic!("No matching ']' found");
                         }
+                        if matches!(instructions[instruction_pointer], Instruction::LoopEnd) {
+                            nesting -= 1;
+                        } else if matches!(
+                            instructions[instruction_pointer],
+                            Instruction::LoopBegin
+                        ) {
+                            nesting += 1;
+                        }
                     }
-                } else {
-                    loop_opening_cache = Some(instruction_pointer);
                 }
             }
-            Instruction::LoopEnd => match loop_opening_cache {
-                Some(p) => {
-                    if tape[data_pointer] != 0 {
-                        instruction_pointer = p;
+            Instruction::LoopEnd => {
+                if tape[data_pointer] != 0 {
+                    let mut nesting: usize = 1;
+                    while nesting != 0 {
+                        if instruction_pointer != 0 {
+                            instruction_pointer -= 1;
+                        } else {
+                            panic!("No matching '[' found");
+                        }
+                        if matches!(instructions[instruction_pointer], Instruction::LoopBegin) {
+                            nesting -= 1;
+                        } else if matches!(instructions[instruction_pointer], Instruction::LoopEnd)
+                        {
+                            nesting += 1;
+                        }
                     }
                 }
-                None => panic!("No matching '[' found"),
-            },
+            }
         }
         instruction_pointer += 1;
     }
-    println!("{:?}", tape);
 }
 
 fn main() {
-    let file_content: String = fs::read_to_string("README.md").unwrap();
+    let filepath = std::env::args().nth(1).expect("No path given.");
+    let file_content: String = fs::read_to_string(filepath).unwrap();
     run(file_to_instruction(String::from(file_content)));
-    let file_content: String = fs::read_to_string("README.md").unwrap();
-    println!("{:?}", file_to_instruction(String::from(file_content)));
 }
