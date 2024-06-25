@@ -1,9 +1,11 @@
+use std::cmp::max;
+use std::cmp::min;
 use std::fs;
 
 const ZERO: char = ' ';
 const ONE: char = '\t';
 const IGNORE_NEWLINES: bool = false;
-
+const TAPE_LENGTH: usize = 1024;
 
 #[derive(Debug)]
 enum Instruction {
@@ -33,7 +35,7 @@ fn file_to_instruction(f: String) -> Vec<Instruction> {
             match counter {
                 1 | 2 => {
                     buffer.push(c);
-                },
+                }
                 3 => {
                     buffer.push(c);
 
@@ -46,20 +48,20 @@ fn file_to_instruction(f: String) -> Vec<Instruction> {
                     }
 
                     match instruction_buffer {
-                        0b000 => {result.push(Instruction::PointerRight)},
-                        0b001 => {result.push(Instruction::PointerLeft)},
-                        0b010 => {result.push(Instruction::Increase)},
-                        0b011 => {result.push(Instruction::Decrease)},
-                        0b100 => {result.push(Instruction::Print)},
-                        0b101 => {result.push(Instruction::Input)},
-                        0b110 => {result.push(Instruction::LoopBegin)},
-                        0b111 => {result.push(Instruction::LoopEnd)},
-                        _ => panic!("Unexpected input.")
+                        0b000 => result.push(Instruction::PointerRight),
+                        0b001 => result.push(Instruction::PointerLeft),
+                        0b010 => result.push(Instruction::Increase),
+                        0b011 => result.push(Instruction::Decrease),
+                        0b100 => result.push(Instruction::Print),
+                        0b101 => result.push(Instruction::Input),
+                        0b110 => result.push(Instruction::LoopBegin),
+                        0b111 => result.push(Instruction::LoopEnd),
+                        _ => panic!("Unexpected input."),
                     }
 
                     counter = 0;
                     buffer = "".to_string();
-                },
+                }
                 _ => counter = 0,
             }
         } else {
@@ -71,7 +73,69 @@ fn file_to_instruction(f: String) -> Vec<Instruction> {
     return result;
 }
 
+fn run(instructions: Vec<Instruction>) {
+    let mut tape: Vec<u8> = vec![0; TAPE_LENGTH];
+    let mut data_pointer: usize = 0;
+    let mut instruction_pointer: usize = 0;
+    let mut loop_opening_cache: Option<usize> = None;
+    println!("Num of instructions: {}", instructions.len());
+    while instructions.len() > instruction_pointer {
+        match instructions[instruction_pointer] {
+            Instruction::PointerRight => {
+                if data_pointer < TAPE_LENGTH - 1 {
+                    data_pointer += 1;
+                }
+            }
+            Instruction::PointerLeft => {
+                if data_pointer != 0 {
+                    data_pointer -= 1;
+                }
+            }
+            Instruction::Increase => {
+                tape[data_pointer] = tape[data_pointer].wrapping_add(1);
+            }
+            Instruction::Decrease => {
+                tape[data_pointer] = tape[data_pointer].wrapping_sub(1);
+            }
+            Instruction::Print => {
+                println!(
+                    "Printing: {} at pos {}",
+                    tape[data_pointer] as char, data_pointer
+                );
+            }
+            Instruction::Input => {
+                todo!();
+            }
+            Instruction::LoopBegin => {
+                if tape[data_pointer] == 0 {
+                    while !matches!(instructions[instruction_pointer], Instruction::LoopEnd) {
+                        if instruction_pointer + 1 < instructions.len() {
+                            instruction_pointer += 1;
+                        } else {
+                            panic!("No matching ']' found");
+                        }
+                    }
+                } else {
+                    loop_opening_cache = Some(instruction_pointer);
+                }
+            }
+            Instruction::LoopEnd => match loop_opening_cache {
+                Some(p) => {
+                    if tape[data_pointer] != 0 {
+                        instruction_pointer = p;
+                    }
+                }
+                None => panic!("No matching '[' found"),
+            },
+        }
+        instruction_pointer += 1;
+    }
+    println!("{:?}", tape);
+}
+
 fn main() {
+    let file_content: String = fs::read_to_string("README.md").unwrap();
+    run(file_to_instruction(String::from(file_content)));
     let file_content: String = fs::read_to_string("README.md").unwrap();
     println!("{:?}", file_to_instruction(String::from(file_content)));
 }
